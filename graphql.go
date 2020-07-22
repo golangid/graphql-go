@@ -158,7 +158,7 @@ func (s *Schema) Validate(queryString string) []*errors.QueryError {
 // without a resolver. If the context get cancelled, no further resolvers will be called and a
 // the context error will be returned as soon as possible (not immediately).
 func (s *Schema) Exec(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) *Response {
-	if s.res.Resolver == (reflect.Value{}) {
+	if s.res.ResolverQuery == (reflect.Value{}) {
 		panic("schema created without resolver, can not exec")
 	}
 	return s.exec(ctx, queryString, operationName, variables, s.res)
