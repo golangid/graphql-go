@@ -21,7 +21,7 @@ import (
 // further resolvers will be called. The context error will be returned as soon
 // as possible (not immediately).
 func (s *Schema) Subscribe(ctx context.Context, queryString string, operationName string, variables map[string]interface{}) (<-chan interface{}, error) {
-	if s.res.Resolver == (reflect.Value{}) {
+	if s.res.ResolverSubscription == (reflect.Value{}) {
 		return nil, errors.New("schema created without resolver, can not subscribe")
 	}
 	if _, ok := s.schema.EntryPoints["subscription"]; !ok {
