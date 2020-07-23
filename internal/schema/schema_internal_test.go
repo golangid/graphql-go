@@ -3,8 +3,8 @@ package schema
 import (
 	"testing"
 
-	"github.com/agungdwiprasetyo/graphql-go/errors"
-	"github.com/agungdwiprasetyo/graphql-go/internal/common"
+	"github.com/golangid/graphql-go/errors"
+	"github.com/golangid/graphql-go/internal/common"
 )
 
 func TestParseInterfaceDef(t *testing.T) {

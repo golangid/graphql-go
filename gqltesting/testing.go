@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"testing"
 
-	graphql "github.com/agungdwiprasetyo/graphql-go"
-	"github.com/agungdwiprasetyo/graphql-go/errors"
+	graphql "github.com/golangid/graphql-go"
+	"github.com/golangid/graphql-go/errors"
 )
 
 // Test is a GraphQL test case to be used with RunTest(s).
