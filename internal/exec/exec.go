@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/agungdwiprasetyo/graphql-go/errors"
-	"github.com/agungdwiprasetyo/graphql-go/internal/common"
-	"github.com/agungdwiprasetyo/graphql-go/internal/exec/resolvable"
-	"github.com/agungdwiprasetyo/graphql-go/internal/exec/selected"
-	"github.com/agungdwiprasetyo/graphql-go/internal/query"
-	"github.com/agungdwiprasetyo/graphql-go/internal/schema"
-	"github.com/agungdwiprasetyo/graphql-go/log"
-	"github.com/agungdwiprasetyo/graphql-go/trace"
+	"github.com/golangid/graphql-go/errors"
+	"github.com/golangid/graphql-go/internal/common"
+	"github.com/golangid/graphql-go/internal/exec/resolvable"
+	"github.com/golangid/graphql-go/internal/exec/selected"
+	"github.com/golangid/graphql-go/internal/query"
+	"github.com/golangid/graphql-go/internal/schema"
+	"github.com/golangid/graphql-go/log"
+	"github.com/golangid/graphql-go/trace"
 )
 
 type Request struct {

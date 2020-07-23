@@ -5,13 +5,13 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/agungdwiprasetyo/graphql-go/errors"
-	"github.com/agungdwiprasetyo/graphql-go/internal/common"
-	"github.com/agungdwiprasetyo/graphql-go/internal/exec/packer"
-	"github.com/agungdwiprasetyo/graphql-go/internal/exec/resolvable"
-	"github.com/agungdwiprasetyo/graphql-go/internal/query"
-	"github.com/agungdwiprasetyo/graphql-go/internal/schema"
-	"github.com/agungdwiprasetyo/graphql-go/introspection"
+	"github.com/golangid/graphql-go/errors"
+	"github.com/golangid/graphql-go/internal/common"
+	"github.com/golangid/graphql-go/internal/exec/packer"
+	"github.com/golangid/graphql-go/internal/exec/resolvable"
+	"github.com/golangid/graphql-go/internal/query"
+	"github.com/golangid/graphql-go/internal/schema"
+	"github.com/golangid/graphql-go/introspection"
 )
 
 type Request struct {

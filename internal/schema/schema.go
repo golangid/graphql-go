@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"text/scanner"
 
-	"github.com/agungdwiprasetyo/graphql-go/errors"
-	"github.com/agungdwiprasetyo/graphql-go/internal/common"
+	"github.com/golangid/graphql-go/errors"
+	"github.com/golangid/graphql-go/internal/common"
 )
 
 // Schema represents a GraphQL service's collective type system capabilities.
