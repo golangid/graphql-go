@@ -3,8 +3,8 @@ package validation
 import (
 	"testing"
 
-	"github.com/agungdwiprasetyo/graphql-go/internal/query"
-	"github.com/agungdwiprasetyo/graphql-go/internal/schema"
+	"github.com/golangid/graphql-go/internal/query"
+	"github.com/golangid/graphql-go/internal/schema"
 )
 
 const (

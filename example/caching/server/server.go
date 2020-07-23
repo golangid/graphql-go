@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/agungdwiprasetyo/graphql-go"
-	"github.com/agungdwiprasetyo/graphql-go/example/caching"
-	"github.com/agungdwiprasetyo/graphql-go/example/caching/cache"
+	"github.com/golangid/graphql-go"
+	"github.com/golangid/graphql-go/example/caching"
+	"github.com/golangid/graphql-go/example/caching/cache"
 )
 
 var schema *graphql.Schema

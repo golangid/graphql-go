@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/agungdwiprasetyo/graphql-go/internal/common"
-	"github.com/agungdwiprasetyo/graphql-go/internal/exec/packer"
-	"github.com/agungdwiprasetyo/graphql-go/internal/schema"
+	"github.com/golangid/graphql-go/internal/common"
+	"github.com/golangid/graphql-go/internal/exec/packer"
+	"github.com/golangid/graphql-go/internal/schema"
 )
 
 type QueryResolver interface {

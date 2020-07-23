@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	graphql "github.com/agungdwiprasetyo/graphql-go"
+	graphql "github.com/golangid/graphql-go"
 )
 
 func MarshalID(kind string, spec interface{}) graphql.ID {
