@@ -38,6 +38,28 @@ func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query
 		}
 		f = fields[0]
 
+		func() {
+			tmpF := *f
+			defer func() {
+				if r := recover(); r != nil {
+					f = &tmpF
+				}
+			}()
+
+			if f.resolver.Kind() == reflect.Ptr {
+				f.resolver = f.resolver.Elem()
+			}
+			f.resolver = f.resolver.FieldByIndex(f.field.FieldIndex)
+
+			var fieldsDeep []*fieldToExec
+			collectFieldsToResolve(f.sels, s, f.resolver, &fieldsDeep, make(map[string]*fieldToExec))
+			if len(fieldsDeep) == 1 {
+				f = fieldsDeep[0]
+			} else {
+				f = &tmpF
+			}
+		}()
+
 		var in []reflect.Value
 		if f.field.HasContext {
 			in = append(in, reflect.ValueOf(ctx))
