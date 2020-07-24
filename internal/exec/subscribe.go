@@ -38,6 +38,7 @@ func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query
 		}
 		f = fields[0]
 
+		// TODO: add check all childs
 		func() {
 			tmpF := *f
 			defer func() {
