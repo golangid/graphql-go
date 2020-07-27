@@ -13,6 +13,7 @@ import (
 	"github.com/golangid/graphql-go/internal/exec/resolvable"
 	"github.com/golangid/graphql-go/internal/exec/selected"
 	"github.com/golangid/graphql-go/internal/query"
+	"github.com/golangid/graphql-go/internal/schema"
 )
 
 type Response struct {
@@ -22,64 +23,28 @@ type Response struct {
 
 func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query.Operation) <-chan *Response {
 	var result reflect.Value
-	var f *fieldToExec
 	var err *errors.QueryError
-	func() {
-		defer r.handlePanic(ctx)
+	sels := selected.ApplyOperation(&r.Request, s, op)
 
-		sels := selected.ApplyOperation(&r.Request, s, op)
-		var fields []*fieldToExec
-		collectFieldsToResolve(sels, s, s.ResolverSubscription, &fields, make(map[string]*fieldToExec))
-
-		// TODO: move this check into validation.Validate
-		if len(fields) != 1 {
-			err = errors.Errorf("%s", "can subscribe to at most one subscription at a time")
-			return
-		}
-		f = fields[0]
-
-		// TODO: add check all childs
-		func() {
-			tmpF := *f
-			defer func() {
-				if r := recover(); r != nil {
-					f = &tmpF
-				}
-			}()
-
-			if f.resolver.Kind() == reflect.Ptr {
-				f.resolver = f.resolver.Elem()
-			}
-			f.resolver = f.resolver.FieldByIndex(f.field.FieldIndex)
-
-			var fieldsDeep []*fieldToExec
-			collectFieldsToResolve(f.sels, s, f.resolver, &fieldsDeep, make(map[string]*fieldToExec))
-			if len(fieldsDeep) == 1 {
-				f = fieldsDeep[0]
-			} else {
-				f = &tmpF
-			}
-		}()
-
-		var in []reflect.Value
-		if f.field.HasContext {
-			in = append(in, reflect.ValueOf(ctx))
-		}
-		if f.field.ArgsPacker != nil {
-			in = append(in, f.field.PackedArgs)
-		}
-		callOut := f.resolver.Method(f.field.MethodIndex).Call(in)
-		result = callOut[0]
-
-		if f.field.HasError && !callOut[1].IsNil() {
-			resolverErr := callOut[1].Interface().(error)
-			err = errors.Errorf("%s", resolverErr)
-			err.ResolverError = resolverErr
-		}
-	}()
-
+	f := r.subscriptionSearchFieldMethod(ctx, sels, nil, s, s.ResolverSubscription)
 	if f == nil {
 		return sendAndReturnClosed(&Response{Errors: []*errors.QueryError{err}})
+	}
+
+	var in []reflect.Value
+	if f.field.HasContext {
+		in = append(in, reflect.ValueOf(ctx))
+	}
+	if f.field.ArgsPacker != nil {
+		in = append(in, f.field.PackedArgs)
+	}
+	callOut := f.resolver.Method(f.field.MethodIndex).Call(in)
+	result = callOut[0]
+
+	if f.field.HasError && !callOut[1].IsNil() {
+		resolverErr := callOut[1].Interface().(error)
+		err = errors.Errorf("%s", resolverErr)
+		err.ResolverError = resolverErr
 	}
 
 	if err != nil {
@@ -185,4 +150,69 @@ func sendAndReturnClosed(resp *Response) chan *Response {
 	c <- resp
 	close(c)
 	return c
+}
+
+func (r *Request) subscriptionSearchFieldMethod(ctx context.Context, sels []selected.Selection, path *pathSegment, s *resolvable.Schema, resolver reflect.Value) (foundField *fieldToExec) {
+
+	var collectFields func(sels []selected.Selection, path *pathSegment, s *resolvable.Schema, resolver reflect.Value)
+	var execField func(s *resolvable.Schema, f *fieldToExec, path *pathSegment)
+	var execSelectionSet func(sels []selected.Selection, typ common.Type, path *pathSegment, s *resolvable.Schema, resolver reflect.Value)
+
+	collectFields = func(sels []selected.Selection, path *pathSegment, s *resolvable.Schema, resolver reflect.Value) {
+		var fields []*fieldToExec
+		collectFieldsToResolve(sels, s, resolver, &fields, make(map[string]*fieldToExec))
+
+		for _, f := range fields {
+			execField(s, f, &pathSegment{path, f.field.Alias})
+			if f.field.UseMethodResolver() && !f.field.FixedResult.IsValid() {
+				foundField = f
+				return
+			}
+		}
+	}
+
+	execField = func(s *resolvable.Schema, f *fieldToExec, path *pathSegment) {
+		var result reflect.Value
+
+		if f.field.FixedResult.IsValid() {
+			result = f.field.FixedResult
+			return
+		}
+
+		res := f.resolver
+		if !f.field.UseMethodResolver() {
+			res = unwrapPtr(res)
+			result = res.FieldByIndex(f.field.FieldIndex)
+		}
+
+		execSelectionSet(f.sels, f.field.Type, path, s, result)
+	}
+
+	execSelectionSet = func(sels []selected.Selection, typ common.Type, path *pathSegment, s *resolvable.Schema, resolver reflect.Value) {
+		t, nonNull := unwrapNonNull(typ)
+		switch t := t.(type) {
+		case *schema.Object, *schema.Interface, *schema.Union:
+			if resolver.Kind() == reflect.Invalid || ((resolver.Kind() == reflect.Ptr || resolver.Kind() == reflect.Interface) && resolver.IsNil()) {
+				if nonNull {
+					err := errors.Errorf("graphql: got nil for non-null %q", t)
+					err.Path = path.toSlice()
+					r.AddError(err)
+				}
+				return
+			}
+
+			collectFields(sels, path, s, resolver)
+			return
+		}
+	}
+
+	collectFields(sels, path, s, resolver)
+	return
+}
+
+func unwrapPtr(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		return v.Elem()
+	}
+	return v
 }
