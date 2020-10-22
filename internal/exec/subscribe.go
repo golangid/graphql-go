@@ -21,7 +21,7 @@ type Response struct {
 	Errors []*errors.QueryError
 }
 
-func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query.Operation) <-chan *Response {
+func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query.Operation) (respChan <-chan *Response) {
 	var result reflect.Value
 	var err *errors.QueryError
 	sels := selected.ApplyOperation(&r.Request, s, op)
@@ -30,6 +30,18 @@ func (r *Request) Subscribe(ctx context.Context, s *resolvable.Schema, op *query
 	if f == nil {
 		return sendAndReturnClosed(&Response{Errors: []*errors.QueryError{err}})
 	}
+
+	defer func() {
+		if panicValue := recover(); panicValue != nil {
+			r.Logger.LogPanic(ctx, panicValue)
+			if errs, ok := panicValue.(*errors.QueryError); ok {
+				err = errs
+			} else {
+				err = makePanicError(panicValue)
+			}
+			respChan = sendAndReturnClosed(&Response{Errors: []*errors.QueryError{err}})
+		}
+	}()
 
 	var in []reflect.Value
 	if f.field.HasContext {
