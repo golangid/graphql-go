@@ -28,7 +28,11 @@ type Request struct {
 func (r *Request) handlePanic(ctx context.Context) {
 	if value := recover(); value != nil {
 		r.Logger.LogPanic(ctx, value)
-		r.AddError(makePanicError(value))
+		if errs, ok := value.(*errors.QueryError); ok {
+			r.AddError(errs)
+		} else {
+			r.AddError(makePanicError(value))
+		}
 	}
 }
 
@@ -186,7 +190,11 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 		defer func() {
 			if panicValue := recover(); panicValue != nil {
 				r.Logger.LogPanic(ctx, panicValue)
-				err = makePanicError(panicValue)
+				if errs, ok := panicValue.(*errors.QueryError); ok {
+					err = errs
+				} else {
+					err = makePanicError(panicValue)
+				}
 				err.Path = path.toSlice()
 			}
 		}()
@@ -334,7 +342,7 @@ func (r *Request) execList(ctx context.Context, sels []selected.Selection, typ *
 				r.execSelectionSet(ctx, sels, typ.OfType, &pathSegment{path, i}, s, resolver.Index(i), &entryouts[i])
 			}(i)
 		}
-		for i := 0; i < concurrency;i++ {
+		for i := 0; i < concurrency; i++ {
 			sem <- struct{}{}
 		}
 	} else {
