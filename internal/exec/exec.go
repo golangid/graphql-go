@@ -30,7 +30,11 @@ type Request struct {
 func (r *Request) handlePanic(ctx context.Context) {
 	if value := recover(); value != nil {
 		r.Logger.LogPanic(ctx, value)
-		r.AddError(makePanicError(value))
+		if errs, ok := value.(*errors.QueryError); ok {
+			r.AddError(errs)
+		} else {
+			r.AddError(makePanicError(value))
+		}
 	}
 }
 
@@ -193,7 +197,11 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 		defer func() {
 			if panicValue := recover(); panicValue != nil {
 				r.Logger.LogPanic(ctx, panicValue)
-				err = makePanicError(panicValue)
+				if errs, ok := panicValue.(*errors.QueryError); ok {
+					err = errs
+				} else {
+					err = makePanicError(panicValue)
+				}
 				err.Path = path.toSlice()
 			}
 		}()
