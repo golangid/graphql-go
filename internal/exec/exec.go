@@ -183,7 +183,7 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 
 	traceCtx, finish := r.Tracer.TraceField(ctx, f.field.TraceLabel, f.field.TypeName, f.field.Name, !f.field.Async, f.field.Args)
 	defer func() {
-		finish(err)
+		finish(f.out.Bytes(), err)
 	}()
 
 	err = func() (err *errors.QueryError) {

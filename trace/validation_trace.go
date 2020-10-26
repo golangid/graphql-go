@@ -13,5 +13,5 @@ type ValidationTracer interface {
 type NoopValidationTracer struct{}
 
 func (NoopValidationTracer) TraceValidation() TraceValidationFinishFunc {
-	return func(errs []*errors.QueryError) {}
+	return func(data []byte, errs []*errors.QueryError) {}
 }

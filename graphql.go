@@ -172,7 +172,7 @@ func (s *Schema) exec(ctx context.Context, queryString string, operationName str
 
 	validationFinish := s.validationTracer.TraceValidation()
 	errs := validation.Validate(s.schema, doc, variables, s.maxDepth)
-	validationFinish(errs)
+	validationFinish(nil, errs)
 	if len(errs) != 0 {
 		return &Response{Errors: errs}
 	}
@@ -229,7 +229,7 @@ func (s *Schema) exec(ctx context.Context, queryString string, operationName str
 	}
 	traceCtx, finish := s.tracer.TraceQuery(ctx, queryString, operationName, variables, varTypes)
 	data, errs := r.Execute(traceCtx, res, op)
-	finish(errs)
+	finish(data, errs)
 
 	return &Response{
 		Data:   data,
