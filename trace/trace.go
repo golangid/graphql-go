@@ -11,8 +11,8 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
-type TraceQueryFinishFunc func([]*errors.QueryError)
-type TraceFieldFinishFunc func(*errors.QueryError)
+type TraceQueryFinishFunc func([]byte, []*errors.QueryError)
+type TraceFieldFinishFunc func([]byte, *errors.QueryError)
 
 type Tracer interface {
 	TraceQuery(ctx context.Context, queryString string, operationName string, variables map[string]interface{}, varTypes map[string]*introspection.Type) (context.Context, TraceQueryFinishFunc)
@@ -33,7 +33,7 @@ func (OpenTracingTracer) TraceQuery(ctx context.Context, queryString string, ope
 		span.LogFields(log.Object("graphql.variables", variables))
 	}
 
-	return spanCtx, func(errs []*errors.QueryError) {
+	return spanCtx, func(data []byte, errs []*errors.QueryError) {
 		if len(errs) > 0 {
 			msg := errs[0].Error()
 			if len(errs) > 1 {
@@ -58,7 +58,7 @@ func (OpenTracingTracer) TraceField(ctx context.Context, label, typeName, fieldN
 		span.SetTag("graphql.args."+name, value)
 	}
 
-	return spanCtx, func(err *errors.QueryError) {
+	return spanCtx, func(data []byte, err *errors.QueryError) {
 		if err != nil {
 			ext.Error.Set(span, true)
 			span.SetTag("graphql.error", err.Error())
@@ -67,30 +67,14 @@ func (OpenTracingTracer) TraceField(ctx context.Context, label, typeName, fieldN
 	}
 }
 
-func (OpenTracingTracer) TraceValidation(ctx context.Context) TraceValidationFinishFunc {
-	span, _ := opentracing.StartSpanFromContext(ctx, "Validate Query")
-
-	return func(errs []*errors.QueryError) {
-		if len(errs) > 0 {
-			msg := errs[0].Error()
-			if len(errs) > 1 {
-				msg += fmt.Sprintf(" (and %d more errors)", len(errs)-1)
-			}
-			ext.Error.Set(span, true)
-			span.SetTag("graphql.error", msg)
-		}
-		span.Finish()
-	}
-}
-
-func noop(*errors.QueryError) {}
+func noop([]byte, *errors.QueryError) {}
 
 type NoopTracer struct{}
 
 func (NoopTracer) TraceQuery(ctx context.Context, queryString string, operationName string, variables map[string]interface{}, varTypes map[string]*introspection.Type) (context.Context, TraceQueryFinishFunc) {
-	return ctx, func(errs []*errors.QueryError) {}
+	return ctx, func(data []byte, errs []*errors.QueryError) {}
 }
 
 func (NoopTracer) TraceField(ctx context.Context, label, typeName, fieldName string, trivial bool, args map[string]interface{}) (context.Context, TraceFieldFinishFunc) {
-	return ctx, func(err *errors.QueryError) {}
+	return ctx, func(data []byte, err *errors.QueryError) {}
 }
