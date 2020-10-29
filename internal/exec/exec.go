@@ -41,7 +41,12 @@ type extensionser interface {
 }
 
 func makePanicError(value interface{}) *errors.QueryError {
-	return errors.Errorf("graphql: panic occurred: %v", value)
+	return &errors.QueryError{
+		Message: fmt.Sprintf("graphql: panic occurred: %v", value),
+		Extensions: map[string]interface{}{
+			"code": 500, "success": false,
+		},
+	}
 }
 
 func (r *Request) Execute(ctx context.Context, s *resolvable.Schema, op *query.Operation) ([]byte, []*errors.QueryError) {
@@ -181,11 +186,6 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 	var result reflect.Value
 	var err *errors.QueryError
 
-	traceCtx, finish := r.Tracer.TraceField(ctx, f.field.TraceLabel, f.field.TypeName, f.field.Name, !f.field.Async, f.field.Args)
-	defer func() {
-		finish(f.out.Bytes(), err)
-	}()
-
 	err = func() (err *errors.QueryError) {
 		defer func() {
 			if panicValue := recover(); panicValue != nil {
@@ -199,12 +199,18 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 			}
 		}()
 
+		var finish trace.TraceFieldFinishFunc
+		ctx, finish = r.Tracer.TraceField(ctx, f.field.TraceLabel, f.field.TypeName, f.field.Name, !f.field.Async, f.field.Args)
+		defer func() {
+			finish(f.out.Bytes(), err)
+		}()
+
 		if f.field.FixedResult.IsValid() {
 			result = f.field.FixedResult
 			return nil
 		}
 
-		if err := traceCtx.Err(); err != nil {
+		if err := ctx.Err(); err != nil {
 			return errors.Errorf("%s", err) // don't execute any more resolvers if context got cancelled
 		}
 
@@ -212,7 +218,7 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 		if f.field.UseMethodResolver() {
 			var in []reflect.Value
 			if f.field.HasContext {
-				in = append(in, reflect.ValueOf(traceCtx))
+				in = append(in, reflect.ValueOf(ctx))
 			}
 			if f.field.ArgsPacker != nil {
 				in = append(in, f.field.PackedArgs)
@@ -251,7 +257,7 @@ func execFieldSelection(ctx context.Context, r *Request, s *resolvable.Schema, f
 		return
 	}
 
-	r.execSelectionSet(traceCtx, f.sels, f.field.Type, path, s, result, f.out)
+	r.execSelectionSet(ctx, f.sels, f.field.Type, path, s, result, f.out)
 }
 
 func (r *Request) execSelectionSet(ctx context.Context, sels []selected.Selection, typ common.Type, path *pathSegment, s *resolvable.Schema, resolver reflect.Value, out *bytes.Buffer) {
