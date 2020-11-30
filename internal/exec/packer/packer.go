@@ -355,11 +355,33 @@ func unmarshalInput(typ reflect.Type, input interface{}) (interface{}, error) {
 			return coerced, nil
 		}
 
+	case reflect.Int:
+		switch input := input.(type) {
+		case int32:
+			return int(input), nil
+		case int64:
+			return int(input), nil
+		case float64:
+			return int(input), nil
+		}
+
+	case reflect.Int64:
+		switch input := input.(type) {
+		case int32:
+			return int64(input), nil
+		case int:
+			return int64(input), nil
+		case float64:
+			return int64(input), nil
+		}
+
 	case reflect.Float64:
 		switch input := input.(type) {
 		case int32:
 			return float64(input), nil
 		case int:
+			return float64(input), nil
+		case int64:
 			return float64(input), nil
 		}
 
