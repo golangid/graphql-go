@@ -224,11 +224,11 @@ func (b *execBuilder) makeExec(t common.Type, resolverType reflect.Type) (Resolv
 func makeScalarExec(t *schema.Scalar, resolverType reflect.Type) (Resolvable, error) {
 	implementsType := false
 	switch r := reflect.New(resolverType).Interface().(type) {
-	case *int32, *int, *int64:
+	case *int32, *int, *int64, *uint32, *uint, *uint64:
 		implementsType = t.Name == "Int"
-	case *float64:
+	case *float32, *float64:
 		implementsType = t.Name == "Float"
-	case *string:
+	case *string, fmt.Stringer:
 		implementsType = t.Name == "String"
 	case *bool:
 		implementsType = t.Name == "Boolean"
